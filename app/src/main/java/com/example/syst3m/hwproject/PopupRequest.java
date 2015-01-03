@@ -7,12 +7,16 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.io.Serializable;
+
 /**
  * Created by syst3m on 12/29/14.
  */
-public class PopupRequest extends Activity {
+public class PopupRequest extends Activity implements Serializable{
     Button okButton,cancelButton;
     TextView requestTextView;
+    String requestUser;
+    String userName;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -23,8 +27,9 @@ public class PopupRequest extends Activity {
         Intent intent= getIntent();
         Bundle bundle = intent.getExtras();
         if(bundle != null){
-            String request = bundle.getString("request");
-            requestTextView.setText("Do you want play with " + request + "!");
+           requestUser = bundle.getString("request");
+            userName = bundle.getString("userName");
+            requestTextView.setText("Do you want play with " + requestUser + "?");
         }
 
     }
@@ -33,6 +38,12 @@ public class PopupRequest extends Activity {
         requestTextView.setText("setRequestTextView" + msg);
     }
     public void exit(View view){
+        finish();
+    }
+
+    public void accept(View view){
+        System.out.println("Accept metod i popuprequest, innan");
+        ConnectionToServerThread.sendToServer("accepted " + requestUser + " " + userName );
         finish();
     }
 }

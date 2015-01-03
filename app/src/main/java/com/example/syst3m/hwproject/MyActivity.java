@@ -1,6 +1,8 @@
 package com.example.syst3m.hwproject;
 
 import android.app.Activity;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
@@ -11,21 +13,21 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 
-public class MyActivity extends Activity {
-    Button button ;
+public class MyActivity extends Activity implements Serializable{
+    Button button;
+    Button exitButton;
     ListView userView;
-    TextView testStatus;
     EditText editUserName;
     ConnectionToServerThread connection;
     String userName;
     ArrayAdapter arrayAdapter;
     ArrayList<String> userList = new ArrayList<String>();
-    private static final int DIALOG_ALERT = 10;
+    Game game = new Game();
 
 
     @Override
@@ -34,10 +36,11 @@ public class MyActivity extends Activity {
         setContentView(R.layout.activity_my);
         button = (Button) findViewById(R.id.ok);
         editUserName = (EditText) findViewById(R.id.userName);
-        testStatus = (TextView) findViewById(R.id.status);
         userView = (ListView) findViewById(R.id.listView);
+        exitButton = (Button) findViewById(R.id.exit);
         connection = new ConnectionToServerThread(this);
         connection.start();
+
         arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, userList);
         userView.setAdapter(arrayAdapter);
         userView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -50,11 +53,11 @@ public class MyActivity extends Activity {
         });
     }
 
-    public void onClick(View view){
+    public void create(View view){
         userName = String.valueOf(editUserName.getText());
         editUserName.setEnabled(false);
         connection.sendToServer(userName);
-        testStatus.setText("You are logging " +  userName);
+  //      testStatus.setText("You are logging " +  userName);
     }
 
     @Override
@@ -76,15 +79,15 @@ public class MyActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
+
+    public void exit(View view) {
         try {
             connection.sendToServer("quit");
             connection.getSocket().close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+        finish();
     }
 
     public void updateListView(ArrayList list){
@@ -109,11 +112,43 @@ public class MyActivity extends Activity {
             public void run() {
                 Intent intent = new Intent(getApplicationContext(),PopupRequest.class);
                 intent.putExtra("request",request);
+                intent.putExtra("userName",userName);
                 startActivity(intent);
-
-
             }
         });
 
+    }
+
+    public void switchToGameMode(String msg, String point){
+        Intent intent = new Intent(getApplicationContext(),Game.class);
+        intent.putExtra("msg",msg);
+        intent.putExtra("point",point);
+        startActivityForResult(intent, 2);
+    }
+
+    public void switchToLeavesMode(String userName){
+        Intent intent = new Intent(getApplicationContext(),LeavesGamePopup.class);
+        intent.putExtra("msg",userName);
+        startActivity(intent);
+
+    }
+
+    public void switchToResultMode(String status , String msg){
+        Intent intent = new Intent(getApplicationContext(),ResultPopup.class);
+        intent.putExtra("status",status);
+        intent.putExtra("msg",msg);
+        startActivity(intent);
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        super.onActivityResult(requestCode, resultCode, data);
+        String message = data.getStringExtra("MESSAGE");
+        if(message.equals("exit")){
+            connection.sendToServer("leaves");
+        }
+        connection.sendToServer("answer " + message);
+        System.out.println(message);
     }
 }
